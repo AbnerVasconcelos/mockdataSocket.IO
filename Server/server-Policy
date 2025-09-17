@@ -1,0 +1,49 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Publish",
+        "iot:Receive",
+        "iot:PublishRetain"
+      ],
+      "Resource": [
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder1/read/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder1/write/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder1/alarms/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder2/read/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder2/write/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder2/alarms/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder3/read/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder3/write/json",
+        "arn:aws:iot:us-east-1:901098706990:topic/extruder3/alarms/json"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iot:Subscribe",
+      "Resource": [
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder1/read/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder1/write/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder1/alarms/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder2/read/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder2/write/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder2/alarms/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder3/read/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder3/write/json",
+        "arn:aws:iot:us-east-1:901098706990:topicfilter/extruder3/alarms/json"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iot:Connect",
+      "Resource": [
+        "arn:aws:iot:us-east-1:901098706990:client/sdk-java",
+        "arn:aws:iot:us-east-1:901098706990:client/basicPubSub",
+        "arn:aws:iot:us-east-1:901098706990:client/sdk-nodejs-*"
+      ]
+    }
+  ]
+}
+

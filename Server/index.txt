@@ -1,0 +1,147 @@
+import express from "express";
+import bodyParser from "body-parser";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import helmet from "helmet";
+import morgan from "morgan";
+import http from "http"; // Socket.IO
+import { Server } from "socket.io"; // Socket.IO
+import { createClient } from "redis"; // Redis client
+
+import clientRoutes from "./routes/client.js";
+import generalRoutes from "./routes/general.js";
+import managementRoutes from "./routes/management.js";
+import salesRoutes from "./routes/sales.js";
+
+// data imports
+import User from "./models/User.js";
+import Product from "./models/Product.js";
+import ProductStat from "./models/ProductStat.js";
+import Transaction from "./models/Transaction.js";
+import OverallStat from "./models/OverallStat.js";
+import AffiliateStat from "./models/AffiliateStat.js";
+
+import {
+  dataUser,
+  dataProduct,
+  dataProductStat,
+  dataTransaction,
+  dataOverallStat,
+  dataAffiliateStat,
+} from "./data/index.js";
+
+/* CONFIGURATION */
+dotenv.config();
+const app = express();
+const server = http.createServer(app);
+
+app.use(express.json());
+app.use(helmet());
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+app.use(morgan("common"));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cors());
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
+
+/* MONGOOSE SETUP */
+const PORT = process.env.PORT || 9000;
+mongoose
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    app.listen(PORT, () => console.log(`Server Port: ${PORT}`));
+  })
+  .catch((error) => console.log(`${error} did not connect`));
+
+/* REDIS SETUP */
+const redisClient = createClient({
+  url: process.env.REDIS_URL || "redis://localhost:6379", // Default local Redis
+});
+
+redisClient.on("error", (err) => {
+  console.error("Redis connection error:", err);
+});
+
+redisClient.connect().then(() => {
+  console.log("Connected to Redis server.");
+});
+
+/* SOCKET.IO SETUP */
+const users = {};
+
+io.on("connection", (socket) => {
+  console.log("###################################################");
+  console.log(`### Usuário conectado: ${socket.id} ###`);
+
+  socket.on("user", (data) => {
+    const { email } = data;
+    users[socket.id] = {
+      email,
+      socketId: socket.id,
+    };
+
+    console.log(`### Usuário registrado com email: ${email}`);
+    console.log(`### ID do socket: ${socket.id}`);
+    console.log("###################################################");
+  });
+
+  socket.on("mensagem", (data) => {
+    if (socket.id in users) {
+      const { email } = users[socket.id];
+      console.log("*********************************************************");
+      console.log(`Dados recebidos do navegador: ${data}`);
+      console.log(`Email associado: ${email}`);
+    } else {
+      console.log("O usuário não está registrado.");
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    console.log(`XXXX Usuário desconectado XXXX: ${socket.id}`);
+
+    if (socket.id in users) {
+      delete users[socket.id];
+    } else {
+      console.log("O usuário desconectado não estava registrado.");
+    }
+    console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+  });
+});
+
+/* REDIS LISTENER */
+(async () => {
+  const subscriber = redisClient.duplicate(); // Duplicate for subscription
+  await subscriber.connect();
+  console.log("Redis subscriber connected.");
+
+  subscriber.subscribe("channel2", (message) => {
+    console.log("**************************************************");
+    console.log(`Novo evento do Redis no canal 'channel2': ${message}`);
+
+    // Emitir o evento para os sockets conectados
+    for (const socketId in users) {
+      const { email } = users[socketId];
+      io.to(socketId).emit("channel2-event", { email, message });
+      console.log(`Evento 'channel2-event' emitido para o socketId ${socketId}`);
+    }
+    console.log("**************************************************");
+  });
+})();
+
+const SOCKET_PORT = process.env.SOCKET_PORT || 3000;
+server.listen(SOCKET_PORT, () => {
+  console.log(`Servidor Socket.IO escutando na porta ${SOCKET_PORT}`);
+});
+
+console.log("### Estado atual do objeto users: ", users);
